@@ -16,6 +16,8 @@ const brushForOrient = (orient) => {
     }
 };
 
+const invertRange = (range) => [range[1], range[0]];
+
 const brushBase = (orient) => {
 
     const brush = brushForOrient(orient);
@@ -42,12 +44,12 @@ const brushBase = (orient) => {
     const percentToSelection = (percent) =>
       mapSelection(percent,
         scaleLinear().domain(xScale.range()).invert,
-        scaleLinear().domain(yScale.range()).invert);
+        scaleLinear().domain(invertRange(yScale.range())).invert);
 
     const selectionToPercent = (selection) =>
       mapSelection(selection,
         scaleLinear().domain(xScale.range()),
-        scaleLinear().domain(yScale.range()));
+        scaleLinear().domain(invertRange(yScale.range())));
 
     const updateXDomain = (selection) => {
         const f = scaleLinear().domain(xScale.domain());
@@ -62,9 +64,9 @@ const brushBase = (orient) => {
     };
 
     const updateYDomain = (selection) => {
-        const g = scaleLinear().domain(yScale.domain());
+        const g = scaleLinear().domain(invertRange(yScale.domain()));
         if (orient === 'y') {
-            return selection.map(g.invert);
+            return [selection[1], selection[0]].map(g.invert);
         } else if (orient === 'xy') {
             return [
                 g.invert(selection[1][1]),
@@ -74,6 +76,10 @@ const brushBase = (orient) => {
     };
 
     const transformEvent = (event) => {
+        // The render function calls brush.move, which triggers, start, brush and end events. We don't
+        // really want those events so suppress them.
+        if (event.sourceEvent && event.sourceEvent.type === 'draw') return;
+
         if (event.selection) {
             const mappedSelection = selectionToPercent(event.selection);
             eventDispatch.call(event.type, {},
