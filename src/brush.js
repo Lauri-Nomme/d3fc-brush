@@ -88,9 +88,23 @@ const brushBase = (orient) => {
                     xDomain: updateXDomain(mappedSelection),
                     yDomain: updateYDomain(mappedSelection)
                 });
+            return mappedSelection;
         } else {
             eventDispatch.call(event.type, {}, {});
         }
+    };
+
+    const moveOnSelectionChanged = (element, percentSelection, eventSelection) => {
+        if (!percentSelection || !eventSelection) {
+            return;
+        }
+
+        const eventPercentSelection = selectionToPercent(eventSelection);
+        if (percentSelection[0] === eventPercentSelection[0] && percentSelection[1] === eventPercentSelection[1]) {
+            return;
+        }
+
+        select(element).call(brush.move, percentToSelection(percentSelection));
     };
 
     const base = (selection) => {
@@ -103,9 +117,9 @@ const brushBase = (orient) => {
             ]);
 
             // forwards events
-            brush.on('end', () => transformEvent(event))
-              .on('brush', () => transformEvent(event))
-              .on('start', () => transformEvent(event));
+            brush.on('end', function() { moveOnSelectionChanged(this, transformEvent(event), event.selection); })
+              .on('brush', function() { moveOnSelectionChanged(this, transformEvent(event), event.selection); })
+              .on('start', function() { moveOnSelectionChanged(this, transformEvent(event), event.selection); });
 
             // render
             const container = innerJoin(select(group[index]), [data]);
